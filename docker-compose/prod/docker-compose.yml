@@ -28,7 +28,7 @@ services:
       service: microservice-db-config
 
   configserver:
-    image: "rohityadav04/configserver:s7"
+    image: "rohityadav04/configserver:s8"
     container_name: configserver-ms
     ports:
       - "8071:8071"
@@ -42,8 +42,28 @@ services:
       file: common-config.yml
       service: microservice-base-config
 
+  eurekaserver:
+    image: "eazybytes/eurekaserver:s8"
+    container_name: eurekaserver-ms
+    ports:
+      - "8070:8070"
+    depends_on:
+      configserver:
+        condition: service_healthy
+    healthcheck:
+      test: "curl --fail --silent localhost:8070/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    extends:
+      file: common-config.yml
+      service: microservice-eureka-config
+    environment:
+      SPRING_APPLICATION_NAME: "eurekaserver"
+
   accounts:
-    image: "rohityadav04/accounts:s7"
+    image: "rohityadav04/accounts:s8"
     container_name: accounts-ms
     ports:
       - "8080:8080"
@@ -55,11 +75,13 @@ services:
         condition: service_healthy
       configserver:
         condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
     extends:
       file: common-config.yml
-      service: microservice-configserver-config
+      service: microservice-eureka-config
   loans:
-    image: "rohityadav04/loans:s7"
+    image: "rohityadav04/loans:s8"
     container_name: loans-ms
     ports:
       - "8090:8090"
@@ -71,12 +93,30 @@ services:
         condition: service_healthy
       configserver:
         condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
     extends:
       file: common-config.yml
-      service: microservice-configserver-config
+      service: microservice-eureka-config
+
+  loans1:
+    image: "eazybytes/loans:s8"
+    container_name: loans-ms1
+    ports:
+      - "8091:8090"
+    depends_on:
+      configserver:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_NAME: "loans"
+    extends:
+      file: common-config.yml
+      service: microservice-eureka-config
 
   cards:
-    image: "rohityadav04/cards:s7"
+    image: "rohityadav04/cards:s8"
     container_name: cards-ms
     ports:
       - "9000:9000"
@@ -88,9 +128,11 @@ services:
         condition: service_healthy
       configserver:
         condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
     extends:
       file: common-config.yml
-      service: microservice-configserver-config
+      service: microservice-eureka-config
 
 networks:
   rohitbank:
